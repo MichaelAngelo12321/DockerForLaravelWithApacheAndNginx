@@ -1,0 +1,28 @@
+# Użyj oficjalnie zalecanego obrazu PHP w wersji 8.2
+FROM php:8.2
+
+# Instalacja zależności
+RUN apt-get update -y && apt-get install -y \
+    nodejs \
+    npm \
+    curl \
+    zip \
+    unzip \
+    && docker-php-ext-install pdo pdo_mysql
+# Ustawienie katalogu roboczego
+WORKDIR /var/www/html
+
+# Kopiowanie plików źródłowych do kontenera
+COPY . .
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
+RUN npm install -g n && n 16.17.0
+RUN npm install && npm run build
+RUN composer install --no-interaction --no-progress
+
+RUN cd public && ln -sf ../storage/app/public/ storage
+
+ENV PORT=9000
+
+ENTRYPOINT ["docker/nginx/entrypoint.sh"]
